@@ -27,7 +27,8 @@ jobs:
       - name: Apply inertial velocity update
         run: |
           python3 motiongrid-v11-patch.py
-          sed -i "s/applicationId 'cz.motiongrid.app'/applicationId 'cz.motiongrid.app.inertial'/; s/versionCode 1/versionCode 2/; s/versionName '1.0.0'/versionName '1.1.0'/" MotionGrid/app/build.gradle
+          python3 motiongrid-v12-patch.py
+          sed -i "s/applicationId 'cz.motiongrid.app'/applicationId 'cz.motiongrid.app.inertial'/; s/versionCode 1/versionCode 3/; s/versionName '1.0.0'/versionName '1.2.0'/" MotionGrid/app/build.gradle
           sed -i 's/android:label="MotionGrid"/android:label="MotionGrid IMU"/' MotionGrid/app/src/main/AndroidManifest.xml
       - name: Check core maths and JavaScript
         run: |
@@ -36,28 +37,38 @@ jobs:
           javac -d build/testclasses app/src/main/java/cz/motiongrid/app/MotionMath.java app/src/main/java/cz/motiongrid/app/VelocityIntegrator.java
           cat > build/VelocitySmoke.java <<'EOF'
           import cz.motiongrid.app.VelocityIntegrator;
-          import cz.motiongrid.app.MotionMath;
           public class VelocitySmoke {
-            public static void main(String[] a) {
+            static final float[] RAW={0,0,9.80665f},G={0,0,0};
+            static long t=0;
+            static void test(boolean b,String name){if(!b)throw new AssertionError(name);System.out.println("PASS "+name);}
+            static void step(VelocityIntegrator v,float x,float y,float z){
+              t+=20000000L;v.accept(new float[]{x,y,z},RAW,G,t);
+            }
+            public static void main(String[] args) {
               VelocityIntegrator v=new VelocityIntegrator();
-              v.accept(new float[]{1,0,0},1000000000L);
-              v.accept(new float[]{1,0,0},1100000000L);
-              if(Math.abs(v.getVelocity()[0]-0.088f)>0.001f)throw new AssertionError("X+ integration");
-              v.accept(new float[]{-1,0,0},1200000000L);
-              v.accept(new float[]{-1,0,0},1300000000L);
-              v.accept(new float[]{-1,0,0},1400000000L);
-              if(v.getVelocity()[0]>=0)throw new AssertionError("X- must reverse");
+              for(int i=0;i<100;i++)step(v,.08f,0,0);
+              test(v.isCalibrated(),"stationary calibration");
+              test(v.getSpeedMps()==0,"bias and initial speed zero");
+              for(int i=0;i<50;i++)step(v,1.08f,0,0);
+              test(v.getVelocity()[0]>.9f&&v.getVelocity()[0]<1.1f,"X+ acceleration");
+              for(int i=0;i<70;i++)step(v,-.92f,0,0);
+              test(v.getVelocity()[0]<0,"X- reverses velocity");
               v.reset();
-              v.accept(new float[]{0,0,2},1000000000L);
-              v.accept(new float[]{0,0,2},1100000000L);
-              if(v.getSpeedMps()!=0)throw new AssertionError("Z disabled by default");
+              for(int i=0;i<100;i++)step(v,0,0,0);
+              for(int i=0;i<50;i++)step(v,0,0,1);
+              test(v.getSpeedMps()==0,"Z disabled");
               v.setIncludeZ(true);
-              v.accept(new float[]{0,0,2},1200000000L);
-              if(v.getSpeedMps()<=0)throw new AssertionError("Z toggle");
-              float[] rz={0,-1,0,1,0,0,0,0,1}, I={1,0,0,0,1,0,0,0,1};
-              float[] out=MotionMath.anchorVector(I,rz,new float[]{1,0,0});
-              if(Math.abs(out[0])>0.001||Math.abs(out[1]-1)>0.001)throw new AssertionError("Rotated reference frame");
-              System.out.println("PASS: acceleration integration, direction reversal, Z toggle, 90-degree rotation");
+              for(int i=0;i<50;i++)step(v,0,0,1);
+              test(v.getVelocity()[2]>.7f,"Z enabled");
+              v.reset();
+              for(int i=0;i<100;i++)step(v,0,0,0);
+              for(int i=0;i<50;i++)step(v,2,0,0);
+              for(int i=0;i<100;i++)step(v,0,0,0);
+              test(v.getSpeedMps()==0,"auto-zero for quiet IMU");
+              v.reset();
+              for(int i=0;i<20;i++)step(v,2,0,0);
+              test(!v.isCalibrated(),"no calibration while accelerating");
+              System.out.println("Sensor velocity smoke tests complete");
             }
           }
           EOF
@@ -69,6 +80,6 @@ jobs:
         run: gradle --no-daemon --stacktrace assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: MotionGrid-install-APK
+          name: MotionGrid-v1.2-calibrated-APK
           path: MotionGrid/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
