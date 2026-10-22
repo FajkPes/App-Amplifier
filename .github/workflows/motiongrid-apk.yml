@@ -33,8 +33,35 @@ jobs:
         run: |
           cd MotionGrid
           mkdir -p build/testclasses
-          javac -d build/testclasses app/src/main/java/cz/motiongrid/app/MotionMath.java app/src/main/java/cz/motiongrid/app/VelocityIntegrator.java tests/MotionMathTest.java
-          java -cp build/testclasses cz.motiongrid.app.MotionMathTest
+          javac -d build/testclasses app/src/main/java/cz/motiongrid/app/MotionMath.java app/src/main/java/cz/motiongrid/app/VelocityIntegrator.java
+          cat > build/VelocitySmoke.java <<'EOF'
+          import cz.motiongrid.app.VelocityIntegrator;
+          import cz.motiongrid.app.MotionMath;
+          public class VelocitySmoke {
+            public static void main(String[] a) {
+              VelocityIntegrator v=new VelocityIntegrator();
+              v.accept(new float[]{1,0,0},1000000000L);
+              v.accept(new float[]{1,0,0},1100000000L);
+              if(Math.abs(v.getVelocity()[0]-0.088f)>0.001f)throw new AssertionError("X+ integration");
+              v.accept(new float[]{-1,0,0},1200000000L);
+              v.accept(new float[]{-1,0,0},1300000000L);
+              if(v.getVelocity()[0]>=0)throw new AssertionError("X- must reverse");
+              v.reset();
+              v.accept(new float[]{0,0,2},1000000000L);
+              v.accept(new float[]{0,0,2},1100000000L);
+              if(v.getSpeedMps()!=0)throw new AssertionError("Z disabled by default");
+              v.setIncludeZ(true);
+              v.accept(new float[]{0,0,2},1200000000L);
+              if(v.getSpeedMps()<=0)throw new AssertionError("Z toggle");
+              float[] rz={0,-1,0,1,0,0,0,0,1}, I={1,0,0,0,1,0,0,0,1};
+              float[] out=MotionMath.anchorVector(I,rz,new float[]{1,0,0});
+              if(Math.abs(out[0])>0.001||Math.abs(out[1]-1)>0.001)throw new AssertionError("Rotated reference frame");
+              System.out.println("PASS: acceleration integration, direction reversal, Z toggle, 90-degree rotation");
+            }
+          }
+          EOF
+          javac -cp build/testclasses -d build/testclasses build/VelocitySmoke.java
+          java -cp build/testclasses VelocitySmoke
           node --check app/src/main/assets/app.js
       - name: Build signed debug APK
         working-directory: MotionGrid
