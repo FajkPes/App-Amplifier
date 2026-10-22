@@ -54,6 +54,7 @@ jobs:
       - name: Package complete standalone v1.4 source project
         shell: bash
         run: |
+          mkdir -p MotionGrid/tests
           cp v14-src/VelocityEstimatorTest.java MotionGrid/tests/VelocityEstimatorTest.java
           mkdir -p MotionGrid/.github/workflows
           cat > MotionGrid/.github/workflows/build-apk.yml <<'WORKFLOW'
