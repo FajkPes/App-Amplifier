@@ -56,8 +56,8 @@ change('            appendArray(line, p.optJSONArray("matrix"), 9);','''        
             appendArray(line, p.optJSONArray("estimatedVelocity"), 3);
             appendNumber(line, p.optDouble("estimatedSpeedMps", Double.NaN));
             appendNumber(line, includeZ ? 1 : 0);''')
-change('        @JavascriptInterface public void requestGps() { runOnUiThread(() -> requestLocation()); }', '''        @JavascriptInterface public void setGpsEnabled(boolean enabled) { runOnUiThread(() -> setGpsEnabled(enabled)); }
-        @JavascriptInterface public void setIncludeZ(boolean enabled) { runOnUiThread(() -> setIncludeZ(enabled)); }
+change('        @JavascriptInterface public void requestGps() { runOnUiThread(() -> requestLocation()); }', '''        @JavascriptInterface public void setGpsEnabled(boolean enabled) { runOnUiThread(() -> MainActivity.this.setGpsEnabled(enabled)); }
+        @JavascriptInterface public void setIncludeZ(boolean enabled) { runOnUiThread(() -> MainActivity.this.setIncludeZ(enabled)); }
         @JavascriptInterface public void resetSpeed() { runOnUiThread(() -> velocity.reset()); }''')
 j.write_text(s)
 
