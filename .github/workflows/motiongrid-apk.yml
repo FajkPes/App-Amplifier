@@ -28,8 +28,8 @@ jobs:
         run: |
           python3 motiongrid-v11-patch.py
           python3 motiongrid-v12-patch.py
-          sed -i "s/applicationId 'cz.motiongrid.app'/applicationId 'cz.motiongrid.app.inertial'/; s/versionCode 1/versionCode 3/; s/versionName '1.0.0'/versionName '1.2.0'/" MotionGrid/app/build.gradle
-          sed -i 's/android:label="MotionGrid"/android:label="MotionGrid IMU"/' MotionGrid/app/src/main/AndroidManifest.xml
+          sed -i "s/applicationId 'cz.motiongrid.app'/applicationId 'cz.motiongrid.app.precision'/; s/versionCode 1/versionCode 3/; s/versionName '1.0.0'/versionName '1.2.0'/" MotionGrid/app/build.gradle
+          sed -i 's/android:label="MotionGrid"/android:label="MotionGrid Precision"/' MotionGrid/app/src/main/AndroidManifest.xml
       - name: Check core maths and JavaScript
         run: |
           cd MotionGrid
