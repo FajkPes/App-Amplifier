@@ -1,0 +1,58 @@
+name: MotionGrid 1.5 - standalone APK
+on:
+  push:
+    branches: [motiongrid-v15-only]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore exact uploaded MotionGrid 1.5 sources
+        shell: bash
+        run: |
+          cat motiongrid-v15/source.part* | base64 --decode > motiongrid-v15-source.tar.xz
+          echo '9363c3f476478df8680a2d5333ba965e40d2b5229875d9922493c13a326ee8d5  motiongrid-v15-source.tar.xz' | sha256sum -c -
+          tar -xJf motiongrid-v15-source.tar.xz
+          grep -q "versionName '1.5.0'" MotionGrid/app/build.gradle
+          test -f MotionGrid/app/src/main/java/cz/motiongrid/app/SpeedEstimator.java
+          test -f MotionGrid/app/src/main/java/cz/motiongrid/app/MotionService.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Test exact source estimator
+        working-directory: MotionGrid
+        shell: bash
+        run: |
+          mkdir -p build/testclasses
+          javac -encoding UTF-8 -d build/testclasses app/src/main/java/cz/motiongrid/app/MotionMath.java app/src/main/java/cz/motiongrid/app/SpeedEstimator.java
+          javac -encoding UTF-8 -cp build/testclasses -d build/testclasses tests/SpeedEstimatorTest.java
+          java -cp build/testclasses SpeedEstimatorTest
+          node --check app/src/main/assets/app.js
+      - name: Android SDK
+        shell: bash
+        run: |
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Compile and sign installation APK
+        working-directory: MotionGrid
+        shell: bash
+        run: gradle --no-daemon --stacktrace assembleDebug
+      - name: Verify generated APK
+        shell: bash
+        run: |
+          test -s MotionGrid/app/build/outputs/apk/debug/app-debug.apk
+          unzip -t MotionGrid/app/build/outputs/apk/debug/app-debug.apk | tail -2
+          sha256sum MotionGrid/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MotionGrid-1.5-installable-APK
+          path: MotionGrid/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
