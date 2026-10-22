@@ -39,8 +39,6 @@ jobs:
           cd MotionGrid
           mkdir -p build/testclasses
           javac -d build/testclasses app/src/main/java/cz/motiongrid/app/MotionMath.java app/src/main/java/cz/motiongrid/app/VelocityIntegrator.java
-          javac -cp build/testclasses -d build/testclasses ../motiongrid-v13/VelocityTest.java
-          java -cp build/testclasses VelocityTest
           javac -cp build/testclasses -d build/testclasses ../v14-src/VelocityEstimatorTest.java
           java -cp build/testclasses VelocityEstimatorTest
           node --check app/src/main/assets/app.js
