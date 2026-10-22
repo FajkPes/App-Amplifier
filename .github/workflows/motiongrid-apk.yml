@@ -24,6 +24,18 @@ jobs:
           gradle-version: '8.11.1'
       - name: Expand MotionGrid sources
         run: tar -xJf motiongrid-src.tar.xz
+      - name: Apply inertial velocity update
+        run: |
+          python3 motiongrid-v11-patch.py
+          sed -i "s/applicationId 'cz.motiongrid.app'/applicationId 'cz.motiongrid.app.inertial'/; s/versionCode 1/versionCode 2/; s/versionName '1.0.0'/versionName '1.1.0'/" MotionGrid/app/build.gradle
+          sed -i 's/android:label="MotionGrid"/android:label="MotionGrid IMU"/' MotionGrid/app/src/main/AndroidManifest.xml
+      - name: Check core maths and JavaScript
+        run: |
+          cd MotionGrid
+          mkdir -p build/testclasses
+          javac -d build/testclasses app/src/main/java/cz/motiongrid/app/MotionMath.java app/src/main/java/cz/motiongrid/app/VelocityIntegrator.java tests/MotionMathTest.java
+          java -cp build/testclasses cz.motiongrid.app.MotionMathTest
+          node --check app/src/main/assets/app.js
       - name: Build signed debug APK
         working-directory: MotionGrid
         run: gradle --no-daemon --stacktrace assembleDebug
