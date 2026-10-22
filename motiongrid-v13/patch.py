@@ -34,6 +34,7 @@ h=h.replace(needle,'''<div class="stop-confirm-row"><button class="btn btn-confi
 h=h.replace('Automaticky nulovat při klidu IMU','Experimentální automatické zastavení po brzdění')
 h=h.replace('Automatický klid senzorů nepozná pohyb stálou rychlostí – může jej mylně vynulovat.',
 '''Při konstantní rychlosti mohou senzory vypadat stejně jako při stání. Automatické zastavení je proto ve výchozím stavu vypnuté.''')
+h=h.replace('id="autoZero" checked','id="autoZero"')
 h=h.replace('V1.2','V1.3').replace('v1.2','v1.3')
 html.write_text(h)
 js=root/'app/src/main/assets/app.js'
