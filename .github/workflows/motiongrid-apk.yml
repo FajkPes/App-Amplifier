@@ -50,3 +50,65 @@ jobs:
           name: MotionGrid-v1.4-corrected-APK
           path: MotionGrid/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Package complete standalone v1.4 source project
+        shell: bash
+        run: |
+          cp v14-src/VelocityEstimatorTest.java MotionGrid/tests/VelocityEstimatorTest.java
+          mkdir -p MotionGrid/.github/workflows
+          cat > MotionGrid/.github/workflows/build-apk.yml <<'WORKFLOW'
+          name: Build MotionGrid IMU 1.4 APK
+          on:
+            workflow_dispatch:
+            push:
+              branches: [main]
+          permissions:
+            contents: read
+          jobs:
+            build:
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v4
+                - uses: actions/setup-java@v4
+                  with:
+                    distribution: temurin
+                    java-version: '17'
+                - name: Set up Android SDK
+                  run: |
+                    export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+                    "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
+                - uses: gradle/actions/setup-gradle@v4
+                  with:
+                    gradle-version: '8.11.1'
+                - name: Build APK
+                  run: gradle --no-daemon assembleDebug
+                - uses: actions/upload-artifact@v4
+                  with:
+                    name: MotionGrid-v1.4-APK
+                    path: app/build/outputs/apk/debug/app-debug.apk
+          WORKFLOW
+          cat > MotionGrid/VERSION.txt <<'VERSION'
+          MotionGrid IMU 1.4.0
+          App ID: cz.motiongrid.app.imu14
+          Complete source code as compiled by GitHub Actions from the MotionGrid v1.4 build branch.
+          Build with JDK 17, Android SDK 35, Gradle 8.11.1:
+            gradle --no-daemon assembleDebug
+          The speed estimated from IMU is subject to drift and cannot determine true absolute velocity when motion is uniform.
+          VERSION
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import Path
+          root=Path('MotionGrid')
+          output=Path('MotionGrid-v1.4-source-code.zip')
+          excluded={'.gradle','build','.idea','.git','__pycache__'}
+          with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
+              for p in root.rglob('*'):
+                  if p.is_file() and not any(part in excluded for part in p.relative_to(root).parts):
+                      z.write(p, str(p))
+          print('Packaged', len(zipfile.ZipFile(output).namelist()), 'source files,', output.stat().st_size, 'bytes')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MotionGrid-v1.4-source-code
+          path: MotionGrid-v1.4-source-code.zip
+          if-no-files-found: error
