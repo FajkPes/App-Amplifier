@@ -28,58 +28,22 @@ jobs:
         run: |
           python3 motiongrid-v11-patch.py
           python3 motiongrid-v12-patch.py
-          sed -i "s/applicationId 'cz.motiongrid.app'/applicationId 'cz.motiongrid.app.precision'/; s/versionCode 1/versionCode 3/; s/versionName '1.0.0'/versionName '1.2.0'/" MotionGrid/app/build.gradle
-          sed -i 's/android:label="MotionGrid"/android:label="MotionGrid Precision"/' MotionGrid/app/src/main/AndroidManifest.xml
+          python3 motiongrid-v13/patch.py
+          sed -i "s/applicationId 'cz.motiongrid.app'/applicationId 'cz.motiongrid.app.motionv13'/; s/versionCode 1/versionCode 4/; s/versionName '1.0.0'/versionName '1.3.0'/" MotionGrid/app/build.gradle
+          sed -i 's/android:label="MotionGrid"/android:label="MotionGrid Motion"/' MotionGrid/app/src/main/AndroidManifest.xml
       - name: Check core maths and JavaScript
         run: |
           cd MotionGrid
           mkdir -p build/testclasses
           javac -d build/testclasses app/src/main/java/cz/motiongrid/app/MotionMath.java app/src/main/java/cz/motiongrid/app/VelocityIntegrator.java
-          cat > build/VelocitySmoke.java <<'EOF'
-          import cz.motiongrid.app.VelocityIntegrator;
-          public class VelocitySmoke {
-            static final float[] RAW={0,0,9.80665f},G={0,0,0};
-            static long t=0;
-            static void test(boolean b,String name){if(!b)throw new AssertionError(name);System.out.println("PASS "+name);}
-            static void step(VelocityIntegrator v,float x,float y,float z){
-              t+=20000000L;v.accept(new float[]{x,y,z},RAW,G,t);
-            }
-            public static void main(String[] args) {
-              VelocityIntegrator v=new VelocityIntegrator();
-              for(int i=0;i<100;i++)step(v,.08f,0,0);
-              test(v.isCalibrated(),"stationary calibration");
-              test(v.getSpeedMps()==0,"bias and initial speed zero");
-              for(int i=0;i<50;i++)step(v,1.08f,0,0);
-              test(v.getVelocity()[0]>.9f&&v.getVelocity()[0]<1.1f,"X+ acceleration");
-              for(int i=0;i<70;i++)step(v,-.92f,0,0);
-              test(v.getVelocity()[0]<0,"X- reverses velocity");
-              v.reset();
-              for(int i=0;i<100;i++)step(v,0,0,0);
-              for(int i=0;i<50;i++)step(v,0,0,1);
-              test(v.getSpeedMps()==0,"Z disabled");
-              v.setIncludeZ(true);
-              for(int i=0;i<50;i++)step(v,0,0,1);
-              test(v.getVelocity()[2]>.7f,"Z enabled");
-              v.reset();
-              for(int i=0;i<100;i++)step(v,0,0,0);
-              for(int i=0;i<50;i++)step(v,2,0,0);
-              for(int i=0;i<100;i++)step(v,0,0,0);
-              test(v.getSpeedMps()==0,"auto-zero for quiet IMU");
-              v.reset();
-              for(int i=0;i<20;i++)step(v,2,0,0);
-              test(!v.isCalibrated(),"no calibration while accelerating");
-              System.out.println("Sensor velocity smoke tests complete");
-            }
-          }
-          EOF
-          javac -cp build/testclasses -d build/testclasses build/VelocitySmoke.java
-          java -cp build/testclasses VelocitySmoke
+          javac -cp build/testclasses -d build/testclasses ../motiongrid-v13/VelocityTest.java
+          java -cp build/testclasses VelocityTest
           node --check app/src/main/assets/app.js
       - name: Build signed debug APK
         working-directory: MotionGrid
         run: gradle --no-daemon --stacktrace assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: MotionGrid-v1.2-calibrated-APK
+          name: MotionGrid-v1.3-motion-APK
           path: MotionGrid/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
