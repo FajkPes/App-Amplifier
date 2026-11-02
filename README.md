@@ -74,6 +74,17 @@ the .NET 8 SDK or newer.
 
 [Detailed documentation](README-DETAILS.md) · [All releases](https://github.com/FajkPes/App-Amplifier/releases)
 
+## How the gain works
+
+Windows exposes each application session from 0 to 100%. If one app needs 200%
+gain, App Amplifier can add approximately +6 dB of device headroom and lower
+the other sessions proportionally. The target session can then use that
+headroom while other apps keep approximately their previous perceived level.
+
+This does not recover detail that is absent from the source. Large boosts can
+clip already loud content or become uncomfortable, so increase gain gradually
+and keep the loud-sound watchdog enabled.
+
 ## Credits
 
 **Idea, concept and design:** FajkPes  
