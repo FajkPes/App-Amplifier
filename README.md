@@ -73,3 +73,8 @@ The release includes the .NET 8 desktop runtime. Building from source requires
 the .NET 8 SDK or newer.
 
 [Detailed documentation](README-DETAILS.md) · [All releases](https://github.com/FajkPes/App-Amplifier/releases)
+
+## Credits
+
+**Idea, concept and design:** FajkPes  
+**Coding:** ChatGPT Codex, Claude and Google Antigravity
